@@ -35,65 +35,65 @@ st.markdown("""
 
     /* Metric Cards */
     .metric-card {
-        background: linear-gradient(135deg, #1e2130 0%, #252840 100%);
+        background: linear-gradient(135deg, #1a1d2e 0%, #1e2138 100%);
         border-radius: 14px;
         padding: 20px 24px;
         border-left: 4px solid;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.25);
         margin-bottom: 12px;
     }
-    .metric-card.blue  { border-color: #4C9BE8; }
-    .metric-card.red   { border-color: #EF5350; }
-    .metric-card.green { border-color: #66BB6A; }
-    .metric-card.amber { border-color: #FFA726; }
+    .metric-card.blue  { border-color: #3a7bd5; }
+    .metric-card.red   { border-color: #c0392b; }
+    .metric-card.green { border-color: #27ae60; }
+    .metric-card.amber { border-color: #d68910; }
 
-    .metric-label { font-size: 12px; color: #9ca3af; font-weight: 500;
-                    text-transform: uppercase; letter-spacing: 0.5px; }
-    .metric-value { font-size: 32px; font-weight: 700; color: #f9fafb;
+    .metric-label { font-size: 11px; color: #6b7280; font-weight: 500;
+                    text-transform: uppercase; letter-spacing: 0.6px; }
+    .metric-value { font-size: 30px; font-weight: 700; color: #c9d1d9;
                     line-height: 1.2; margin: 4px 0; }
-    .metric-sub   { font-size: 12px; color: #6b7280; }
+    .metric-sub   { font-size: 11px; color: #4b5563; }
 
     /* Section headers */
     .section-title {
-        font-size: 18px; font-weight: 700; color: #e5e7eb;
-        padding: 10px 0 6px; border-bottom: 2px solid #374151;
-        margin-bottom: 16px;
+        font-size: 15px; font-weight: 600; color: #8b949e;
+        padding: 10px 0 6px; border-bottom: 1px solid #21262d;
+        margin-bottom: 16px; letter-spacing: 0.3px;
     }
 
     /* Risk Badges */
-    .badge-high   { background:#3b1111; color:#ef5350; border:1px solid #ef5350;
-                    border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
-    .badge-medium { background:#2d2000; color:#ffa726; border:1px solid #ffa726;
-                    border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
-    .badge-low    { background:#0d2b0d; color:#66bb6a; border:1px solid #66bb6a;
-                    border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+    .badge-high   { background:#1f0d0d; color:#a94442; border:1px solid #7b2020;
+                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
+    .badge-medium { background:#1f1700; color:#a07800; border:1px solid #6b5000;
+                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
+    .badge-low    { background:#0a1f0a; color:#2e7d32; border:1px solid #1b4d1b;
+                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
 
     /* Sidebar */
-    [data-testid="stSidebar"] { background: #161826; border-right: 1px solid #2d3148; }
+    [data-testid="stSidebar"] { background: #13151f; border-right: 1px solid #21262d; }
     [data-testid="stSidebar"] .stSelectbox label,
     [data-testid="stSidebar"] .stMultiSelect label,
-    [data-testid="stSidebar"] .stSlider label { color: #d1d5db !important; font-size:13px; }
+    [data-testid="stSidebar"] .stSlider label { color: #8b949e !important; font-size:12px; }
 
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { background: #1e2130; border-radius: 10px; padding: 4px; }
-    .stTabs [data-baseweb="tab"] { color: #9ca3af; border-radius: 8px; font-weight:500; }
-    .stTabs [aria-selected="true"] { background: #2d3160 !important; color: #fff !important; }
+    .stTabs [data-baseweb="tab-list"] { background: #161b22; border-radius: 10px; padding: 4px; }
+    .stTabs [data-baseweb="tab"] { color: #6b7280; border-radius: 8px; font-weight:500; font-size:13px; }
+    .stTabs [aria-selected="true"] { background: #21262d !important; color: #8b949e !important; }
 
     /* Table */
-    .dataframe { font-size: 13px !important; }
+    .dataframe { font-size: 12px !important; }
 
-    /* Info box */
+    /* Info / Warn / Danger boxes */
     .info-box {
-        background: #1a2744; border: 1px solid #2563eb; border-radius: 10px;
-        padding: 14px 18px; color: #93c5fd; font-size: 13px; margin: 10px 0;
+        background: #0d1829; border: 1px solid #1d3557; border-radius: 8px;
+        padding: 12px 16px; color: #6e93b8; font-size: 12px; margin: 8px 0;
     }
     .warn-box {
-        background: #2d1b00; border: 1px solid #f59e0b; border-radius: 10px;
-        padding: 14px 18px; color: #fcd34d; font-size: 13px; margin: 10px 0;
+        background: #1a1200; border: 1px solid #4d3800; border-radius: 8px;
+        padding: 12px 16px; color: #8a6d00; font-size: 12px; margin: 8px 0;
     }
     .danger-box {
-        background: #2d0909; border: 1px solid #dc2626; border-radius: 10px;
-        padding: 14px 18px; color: #fca5a5; font-size: 13px; margin: 10px 0;
+        background: #1a0707; border: 1px solid #5c1a1a; border-radius: 8px;
+        padding: 12px 16px; color: #8b3a3a; font-size: 12px; margin: 8px 0;
     }
     div[data-testid="stHorizontalBlock"] { gap: 12px; }
 </style>
@@ -198,7 +198,7 @@ with st.sidebar:
     emp_id = st.number_input("Employee Index (0–1469)", 0, 1469, 0, step=1)
 
     st.markdown("---")
-    st.markdown("<div style='color:#6b7280;font-size:11px'>Unified Mentor Internship<br/>ML Attrition Project</div>",
+    st.markdown("<div style='color:#374151;font-size:11px'>Unified Mentor Internship<br/>ML Attrition Project</div>",
                 unsafe_allow_html=True)
 
 # ─── Apply Filters ───────────────────────────────────────────────────────────
@@ -216,10 +216,10 @@ if sel_role != 'All':
 # ═══════════════════════════════════════════════════════════════
 st.markdown("""
 <div style='padding:20px 0 10px'>
-  <h1 style='color:#f9fafb;font-size:28px;font-weight:700;margin:0'>
+  <h1 style='color:#c9d1d9;font-size:24px;font-weight:700;margin:0'>
     🔵 Employee Attrition Risk Dashboard
   </h1>
-  <p style='color:#9ca3af;font-size:14px;margin:4px 0 0'>
+  <p style='color:#4b5563;font-size:13px;margin:4px 0 0'>
     Palo Alto Networks · Predictive HR Analytics · Powered by XGBoost + SHAP
   </p>
 </div>
@@ -299,17 +299,17 @@ with tab1:
         ax.set_facecolor('#1e2130')
         sizes  = [high_n, med_n, low_n]
         labels = [f'High\n{high_n}', f'Medium\n{med_n}', f'Low\n{low_n}']
-        colors = ['#EF5350', '#FFA726', '#66BB6A']
+        colors = ['#8b2020', '#7a5c00', '#1b5e20']
         wedges, texts, autotexts = ax.pie(
             sizes, labels=labels, colors=colors,
             autopct='%1.1f%%', startangle=90,
             wedgeprops=dict(width=0.55, edgecolor='#1e2130', linewidth=2),
-            textprops={'color': '#d1d5db', 'fontsize': 10}
+            textprops={'color': '#6b7280', 'fontsize': 9}
         )
         for at in autotexts:
-            at.set_color('white'); at.set_fontsize(9); at.set_fontweight('bold')
-        ax.set_title('Risk Category Distribution', color='#f9fafb',
-                     fontsize=12, fontweight='bold', pad=10)
+            at.set_color('#4b5563'); at.set_fontsize(8); at.set_fontweight('bold')
+        ax.set_title('Risk Category Distribution', color='#8b949e',
+                     fontsize=11, fontweight='bold', pad=10)
         st.pyplot(fig)
         plt.close()
 
@@ -317,19 +317,19 @@ with tab1:
         # Histogram — Probability Distribution
         fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
         ax.set_facecolor('#1e2130')
-        ax.hist(filtered['AttritionProb'], bins=25, color='#4C9BE8',
-                edgecolor='#1e2130', linewidth=0.8, alpha=0.85)
-        ax.axvline(x=risk_threshold, color='#EF5350', linestyle='--',
+        ax.hist(filtered['AttritionProb'], bins=25, color='#2d5a8e',
+                edgecolor='#1e2130', linewidth=0.8, alpha=0.75)
+        ax.axvline(x=risk_threshold, color='#8b2020', linestyle='--',
                    linewidth=2, label=f'High Risk ≥{risk_threshold}%')
-        ax.axvline(x=30, color='#FFA726', linestyle='--',
+        ax.axvline(x=30, color='#7a5c00', linestyle='--',
                    linewidth=1.5, label='Medium Risk ≥30%')
         ax.set_title('Attrition Probability Distribution',
-                     color='#f9fafb', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Attrition Probability (%)', color='#9ca3af')
-        ax.set_ylabel('Number of Employees', color='#9ca3af')
-        ax.tick_params(colors='#9ca3af')
-        ax.spines[['top','right','left','bottom']].set_color('#374151')
-        ax.legend(fontsize=9, facecolor='#252840', labelcolor='#d1d5db')
+                     color='#8b949e', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Attrition Probability (%)', color='#4b5563')
+        ax.set_ylabel('Number of Employees', color='#4b5563')
+        ax.tick_params(colors='#4b5563')
+        ax.spines[['top','right','left','bottom']].set_color('#21262d')
+        ax.legend(fontsize=9, facecolor='#161b22', labelcolor='#6b7280')
         st.pyplot(fig)
         plt.close()
 
@@ -374,16 +374,16 @@ with tab1:
             ax.set_facecolor('#1e2130')
             rates = df_raw.groupby(feat)['Attrition'].mean() * 100
             rates.sort_values(ascending=False).plot(
-                kind='bar', ax=ax, color='#EF5350', edgecolor='#1e2130', width=0.6)
-            ax.set_title(title, color='#f9fafb', fontsize=10, fontweight='bold')
-            ax.set_ylabel('%', color='#9ca3af', fontsize=9)
-            ax.tick_params(colors='#9ca3af', labelsize=8, rotation=20)
-            ax.spines[['top','right','left','bottom']].set_color('#374151')
+                kind='bar', ax=ax, color='#6b2020', edgecolor='#1e2130', width=0.6)
+            ax.set_title(title, color='#8b949e', fontsize=10, fontweight='bold')
+            ax.set_ylabel('%', color='#4b5563', fontsize=9)
+            ax.tick_params(colors='#4b5563', labelsize=8, rotation=20)
+            ax.spines[['top','right','left','bottom']].set_color('#21262d')
             ax.yaxis.set_major_formatter(mtick.PercentFormatter())
             for bar in ax.patches:
                 ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3,
                         f'{bar.get_height():.1f}%', ha='center', va='bottom',
-                        fontsize=7, color='#d1d5db')
+                        fontsize=7, color='#4b5563')
             st.pyplot(fig)
             plt.close()
 
@@ -400,15 +400,15 @@ with tab2:
 
     # Risk color
     if risk_cat == 'High':
-        badge_class = 'badge-high'; risk_icon = '🔴'; bar_color = '#EF5350'
+        badge_class = 'badge-high'; risk_icon = '🔴'; bar_color = '#8b2020'
         action = "🚨 URGENT: Schedule immediate 1:1. Consider salary review, role change, or counter-offer."
         box_class = 'danger-box'
     elif risk_cat == 'Medium':
-        badge_class = 'badge-medium'; risk_icon = '🟡'; bar_color = '#FFA726'
+        badge_class = 'badge-medium'; risk_icon = '🟡'; bar_color = '#7a5c00'
         action = "⚠️ Monitor closely. Schedule career development discussion. Review compensation."
         box_class = 'warn-box'
     else:
-        badge_class = 'badge-low'; risk_icon = '🟢'; bar_color = '#66BB6A'
+        badge_class = 'badge-low'; risk_icon = '🟢'; bar_color = '#2e7d32'
         action = "✅ Employee is stable. Continue regular check-ins and engagement activities."
         box_class = 'info-box'
 
@@ -446,9 +446,9 @@ with tab2:
         for k, v in details.items():
             st.markdown(
                 f"<div style='display:flex;justify-content:space-between;"
-                f"padding:6px 0;border-bottom:1px solid #2d3148;'>"
-                f"<span style='color:#9ca3af;font-size:13px'>{k}</span>"
-                f"<span style='color:#f9fafb;font-size:13px;font-weight:500'>{v}</span>"
+                f"padding:6px 0;border-bottom:1px solid #21262d;'>"
+                f"<span style='color:#4b5563;font-size:12px'>{k}</span>"
+                f"<span style='color:#8b949e;font-size:12px;font-weight:500'>{v}</span>"
                 f"</div>", unsafe_allow_html=True)
 
     with col_right:
@@ -491,14 +491,14 @@ with tab2:
         ax.text(0, 0.15, f'{prob:.1f}%', ha='center', va='center',
                 fontsize=26, fontweight='bold', color=bar_color)
         ax.text(0, -0.05, 'Attrition Risk', ha='center', va='center',
-                fontsize=11, color='#9ca3af')
-        ax.text(-0.95, -0.1, '0%', color='#66BB6A', fontsize=9, ha='center')
-        ax.text(0, 1.05, '50%', color='#FFA726', fontsize=9, ha='center')
-        ax.text(0.95, -0.1, '100%', color='#EF5350', fontsize=9, ha='center')
+                fontsize=11, color='#4b5563')
+        ax.text(-0.95, -0.1, '0%', color='#2e7d32', fontsize=9, ha='center')
+        ax.text(0, 1.05, '50%', color='#7a5c00', fontsize=9, ha='center')
+        ax.text(0.95, -0.1, '100%', color='#8b2020', fontsize=9, ha='center')
 
         ax.set_xlim(-1.2, 1.2); ax.set_ylim(-0.3, 1.25)
         ax.axis('off')
-        ax.set_title('Risk Gauge', color='#f9fafb', fontsize=12, fontweight='bold')
+        ax.set_title('Risk Gauge', color='#8b949e', fontsize=12, fontweight='bold')
         st.pyplot(fig)
         plt.close()
 
@@ -516,12 +516,12 @@ with tab2:
         ax.set_facecolor('#1e2130')
         ax.plot(angles, vals_r, color=bar_color, linewidth=2)
         ax.fill(angles, vals_r, alpha=0.25, color=bar_color)
-        ax.set_xticks(angles[:-1]); ax.set_xticklabels(cats, color='#9ca3af', fontsize=8)
+        ax.set_xticks(angles[:-1]); ax.set_xticklabels(cats, color='#4b5563', fontsize=8)
         ax.set_ylim(0, 4); ax.set_yticks([1, 2, 3, 4])
-        ax.set_yticklabels(['1', '2', '3', '4'], color='#6b7280', fontsize=7)
-        ax.spines['polar'].set_color('#374151')
-        ax.grid(color='#374151', linewidth=0.8)
-        ax.set_title('Satisfaction Radar', color='#f9fafb', fontsize=11,
+        ax.set_yticklabels(['1', '2', '3', '4'], color='#374151', fontsize=7)
+        ax.spines['polar'].set_color('#21262d')
+        ax.grid(color='#21262d', linewidth=0.8)
+        ax.set_title('Satisfaction Radar', color='#8b949e', fontsize=11,
                      fontweight='bold', pad=15)
         st.pyplot(fig)
         plt.close()
@@ -553,30 +553,30 @@ with tab3:
         depts = dept_stats.index.tolist()
         x = np.arange(len(depts))
         w = 0.35
-        ax.bar(x - w/2, dept_stats['HighRisk'],   w, label='High Risk',   color='#EF5350', edgecolor='#1e2130')
-        ax.bar(x + w/2, dept_stats['MedRisk'],    w, label='Medium Risk', color='#FFA726', edgecolor='#1e2130')
-        ax.set_xticks(x); ax.set_xticklabels(depts, color='#9ca3af', rotation=15, fontsize=10)
-        ax.tick_params(colors='#9ca3af')
-        ax.spines[['top','right','left','bottom']].set_color('#374151')
+        ax.bar(x - w/2, dept_stats['HighRisk'],   w, label='High Risk',   color='#6b2020', edgecolor='#1e2130')
+        ax.bar(x + w/2, dept_stats['MedRisk'],    w, label='Medium Risk', color='#5c4400', edgecolor='#1e2130')
+        ax.set_xticks(x); ax.set_xticklabels(depts, color='#4b5563', rotation=15, fontsize=10)
+        ax.tick_params(colors='#4b5563')
+        ax.spines[['top','right','left','bottom']].set_color('#21262d')
         ax.set_title('High & Medium Risk Count by Department',
-                     color='#f9fafb', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Employees', color='#9ca3af')
-        ax.legend(facecolor='#252840', labelcolor='#d1d5db', fontsize=9)
+                     color='#8b949e', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Employees', color='#4b5563')
+        ax.legend(facecolor='#161b22', labelcolor='#6b7280', fontsize=9)
         st.pyplot(fig); plt.close()
 
     with col_b:
         fig, ax = plt.subplots(figsize=(6, 4), facecolor='#1e2130')
         ax.set_facecolor('#1e2130')
-        colors_bar = ['#EF5350', '#FFA726', '#66BB6A']
+        colors_bar = ['#6b2020', '#5c4400', '#1b5e20']
         bars = ax.barh(dept_stats.index, dept_stats['AvgRisk'],
                        color=colors_bar[:len(dept_stats)], edgecolor='#1e2130')
         for bar in bars:
             ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2,
-                    f'{bar.get_width():.1f}%', va='center', color='#d1d5db', fontsize=10)
-        ax.set_xlabel('Average Attrition Probability (%)', color='#9ca3af')
-        ax.tick_params(colors='#9ca3af')
-        ax.spines[['top','right','left','bottom']].set_color('#374151')
-        ax.set_title('Avg Risk Score by Department', color='#f9fafb',
+                    f'{bar.get_width():.1f}%', va='center', color='#4b5563', fontsize=10)
+        ax.set_xlabel('Average Attrition Probability (%)', color='#4b5563')
+        ax.tick_params(colors='#4b5563')
+        ax.spines[['top','right','left','bottom']].set_color('#21262d')
+        ax.set_title('Avg Risk Score by Department', color='#8b949e',
                      fontsize=12, fontweight='bold')
         st.pyplot(fig); plt.close()
 
@@ -593,23 +593,23 @@ with tab3:
 
     fig, ax = plt.subplots(figsize=(10, 4), facecolor='#1e2130')
     ax.set_facecolor('#1e2130')
-    bar_colors = ['#EF5350' if v >= 40 else '#FFA726' if v >= 25 else '#66BB6A'
+    bar_colors = ['#6b2020' if v >= 40 else '#5c4400' if v >= 25 else '#1b5e20'
                   for v in role_stats['AvgRisk']]
     bars = ax.bar(role_stats.index, role_stats['AvgRisk'],
                   color=bar_colors, edgecolor='#1e2130', width=0.6)
-    ax.set_xticklabels(role_stats.index, rotation=30, ha='right', color='#9ca3af', fontsize=9)
-    ax.tick_params(colors='#9ca3af')
-    ax.spines[['top','right','left','bottom']].set_color('#374151')
-    ax.set_title('Average Attrition Risk by Job Role', color='#f9fafb',
+    ax.set_xticklabels(role_stats.index, rotation=30, ha='right', color='#4b5563', fontsize=9)
+    ax.tick_params(colors='#4b5563')
+    ax.spines[['top','right','left','bottom']].set_color('#21262d')
+    ax.set_title('Average Attrition Risk by Job Role', color='#8b949e',
                  fontsize=12, fontweight='bold')
-    ax.set_ylabel('Avg Attrition Probability (%)', color='#9ca3af')
-    ax.axhline(y=risk_threshold, color='#EF5350', linestyle='--', alpha=0.6,
+    ax.set_ylabel('Avg Attrition Probability (%)', color='#4b5563')
+    ax.axhline(y=risk_threshold, color='#6b2020', linestyle='--', alpha=0.5,
                label=f'High Risk Threshold ({risk_threshold}%)')
-    ax.legend(facecolor='#252840', labelcolor='#d1d5db', fontsize=9)
+    ax.legend(facecolor='#161b22', labelcolor='#6b7280', fontsize=9)
     for bar in bars:
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3,
                 f'{bar.get_height():.1f}%', ha='center', va='bottom',
-                fontsize=8, color='#d1d5db')
+                fontsize=8, color='#4b5563')
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
@@ -635,12 +635,12 @@ with tab4:
                        color=norm_colors[::-1], edgecolor='#1e2130')
         for bar in bars:
             ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height()/2,
-                    f'{bar.get_width():.4f}', va='center', color='#d1d5db', fontsize=8)
+                    f'{bar.get_width():.4f}', va='center', color='#4b5563', fontsize=8)
         ax.set_title('Top 15 Feature Importances (XGBoost)',
-                     color='#f9fafb', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Importance Score', color='#9ca3af')
-        ax.tick_params(colors='#9ca3af', labelsize=9)
-        ax.spines[['top','right','left','bottom']].set_color('#374151')
+                     color='#8b949e', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Importance Score', color='#4b5563')
+        ax.tick_params(colors='#4b5563', labelsize=9)
+        ax.spines[['top','right','left','bottom']].set_color('#21262d')
         plt.tight_layout()
         st.pyplot(fig); plt.close()
 
@@ -659,10 +659,10 @@ with tab4:
         ]
         for icon_title, desc in insights:
             st.markdown(f"""
-            <div style='padding:9px 12px;margin:5px 0;background:#1e2130;
-                        border-radius:8px;border-left:3px solid #4C9BE8'>
-              <div style='color:#e5e7eb;font-size:13px;font-weight:600'>{icon_title}</div>
-              <div style='color:#9ca3af;font-size:12px;margin-top:2px'>{desc}</div>
+            <div style='padding:8px 12px;margin:4px 0;background:#13151f;
+                        border-radius:7px;border-left:2px solid #21262d'>
+              <div style='color:#6b7280;font-size:12px;font-weight:600'>{icon_title}</div>
+              <div style='color:#374151;font-size:11px;margin-top:2px'>{desc}</div>
             </div>""", unsafe_allow_html=True)
 
     # What-If Scenario Explorer
@@ -702,14 +702,14 @@ with tab4:
     sample_scaled = scaler.transform(sample.values.reshape(1, -1))
     wi_prob = model.predict_proba(sample_scaled)[0][1] * 100
 
-    wi_color = '#EF5350' if wi_prob >= risk_threshold else '#FFA726' if wi_prob >= 30 else '#66BB6A'
+    wi_color = '#8b2020' if wi_prob >= risk_threshold else '#7a5c00' if wi_prob >= 30 else '#2e7d32'
     wi_label = 'HIGH RISK 🔴' if wi_prob >= risk_threshold else 'MEDIUM RISK 🟡' if wi_prob >= 30 else 'LOW RISK 🟢'
 
     st.markdown(f"""
     <div class='metric-card blue' style='text-align:center;margin-top:10px'>
       <div class='metric-label'>Predicted Attrition Probability</div>
-      <div style='font-size:48px;font-weight:800;color:{wi_color}'>{wi_prob:.1f}%</div>
-      <div style='font-size:16px;color:{wi_color};font-weight:600'>{wi_label}</div>
+      <div style='font-size:42px;font-weight:800;color:{wi_color}'>{wi_prob:.1f}%</div>
+      <div style='font-size:14px;color:{wi_color};font-weight:600;opacity:0.8'>{wi_label}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -748,11 +748,11 @@ with tab5:
                     xticklabels=['Stayed', 'Left'],
                     yticklabels=['Stayed', 'Left'],
                     linewidths=2, linecolor='#1e2130',
-                    annot_kws={'size': 14, 'color': 'white', 'weight': 'bold'})
-        ax.set_title('Confusion Matrix', color='#f9fafb', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Actual', color='#9ca3af')
-        ax.set_xlabel('Predicted', color='#9ca3af')
-        ax.tick_params(colors='#9ca3af')
+                    annot_kws={'size': 14, 'color': '#8b949e', 'weight': 'bold'})
+        ax.set_title('Confusion Matrix', color='#8b949e', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Actual', color='#4b5563')
+        ax.set_xlabel('Predicted', color='#4b5563')
+        ax.tick_params(colors='#4b5563')
         plt.tight_layout()
         st.pyplot(fig); plt.close()
 
@@ -762,17 +762,17 @@ with tab5:
         ax.set_facecolor('#1e2130')
         metric_names = list(metrics.keys())
         metric_vals  = list(metrics.values())
-        colors_m = ['#4C9BE8', '#66BB6A', '#EF5350', '#FFA726', '#AB47BC']
+        colors_m = ['#2d5a8e', '#1b5e20', '#6b2020', '#5c4400', '#4a235a']
         bars = ax.bar(metric_names, metric_vals, color=colors_m, edgecolor='#1e2130', width=0.6)
         for bar in bars:
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005,
                     f'{bar.get_height():.3f}', ha='center', va='bottom',
-                    fontsize=10, color='#f9fafb', fontweight='bold')
+                    fontsize=10, color='#4b5563', fontweight='bold')
         ax.set_ylim(0, 1.1)
-        ax.axhline(y=0.8, color='white', linestyle='--', alpha=0.3, linewidth=1)
-        ax.set_title('Model Metrics Overview', color='#f9fafb', fontsize=12, fontweight='bold')
-        ax.tick_params(colors='#9ca3af')
-        ax.spines[['top','right','left','bottom']].set_color('#374151')
+        ax.axhline(y=0.8, color='#21262d', linestyle='--', alpha=0.6, linewidth=1)
+        ax.set_title('Model Metrics Overview', color='#8b949e', fontsize=12, fontweight='bold')
+        ax.tick_params(colors='#4b5563')
+        ax.spines[['top','right','left','bottom']].set_color('#21262d')
         plt.tight_layout()
         st.pyplot(fig); plt.close()
 
@@ -790,7 +790,7 @@ with tab5:
     ]
     for step, desc in pipeline_steps:
         st.markdown(f"""
-        <div style='display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #2d3148;align-items:start'>
-          <span style='color:#4C9BE8;font-size:13px;font-weight:600;min-width:180px'>{step}</span>
-          <span style='color:#9ca3af;font-size:13px'>{desc}</span>
+        <div style='display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #21262d;align-items:start'>
+          <span style='color:#2d5a8e;font-size:12px;font-weight:600;min-width:180px'>{step}</span>
+          <span style='color:#4b5563;font-size:12px'>{desc}</span>
         </div>""", unsafe_allow_html=True)
