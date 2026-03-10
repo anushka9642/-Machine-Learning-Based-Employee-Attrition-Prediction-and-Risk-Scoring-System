@@ -9,788 +9,712 @@ warnings.filterwarnings('ignore')
 
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                               f1_score, roc_auc_score, confusion_matrix)
 from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
 import shap
 
-# ─── Page Config ──────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+#  DESIGN TOKENS  (single source of truth for all colors)
+# ══════════════════════════════════════════════════════════════
+BG_PAGE  = '#0d0f1a'   # darkest — page background
+BG_CARD  = '#13162a'   # card / chart background
+BG_CARD2 = '#1a1e35'   # slightly lighter card
+BORDER   = '#2a2f52'   # subtle border lines
+TXT_H    = '#e2e8f0'   # headings / large text     → very light slate
+TXT_B    = '#a0aec0'   # body text                 → medium slate
+TXT_D    = '#718096'   # dimmed / sub-labels       → dim slate
+RED      = '#fc8181'   # high risk
+AMBER    = '#f6ad55'   # medium risk
+GREEN    = '#68d391'   # low risk
+BLUE     = '#63b3ed'   # accent / neutral
+PURPLE   = '#b794f4'   # accent 2
+TEAL     = '#4fd1c5'   # accent 3
+
+# ─── Page Config ──────────────────────────────────────────────
 st.set_page_config(
     page_title="Attrition Risk Dashboard — Palo Alto Networks",
-    page_icon="🔵",
-    layout="wide",
+    page_icon="🔵", layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ─── Custom CSS ───────────────────────────────────────────────────────────────
-st.markdown("""
+# ─── CSS ──────────────────────────────────────────────────────
+st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  html, body, [class*="css"] {{ font-family:'Inter',sans-serif; }}
+  .main, .block-container, .stApp {{ background-color:{BG_PAGE}; }}
 
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+  /* KPI Cards */
+  .kpi {{
+    background:{BG_CARD}; border-radius:16px; padding:18px 22px;
+    border:1px solid {BORDER}; margin-bottom:10px;
+    box-shadow:0 4px 24px rgba(0,0,0,.45); position:relative; overflow:hidden;
+  }}
+  .kpi::before {{
+    content:''; position:absolute; top:0; left:0; right:0;
+    height:3px; border-radius:16px 16px 0 0;
+  }}
+  .kpi.bl::before {{ background:linear-gradient(90deg,{BLUE},{PURPLE}); }}
+  .kpi.rd::before {{ background:linear-gradient(90deg,{RED},#fc8181);  }}
+  .kpi.gr::before {{ background:linear-gradient(90deg,{GREEN},{TEAL}); }}
+  .kpi.am::before {{ background:linear-gradient(90deg,{AMBER},#fbd38d);}}
+  .kpi-lbl {{ font-size:10px; color:{TXT_D}; font-weight:600;
+              text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }}
+  .kpi-val {{ font-size:32px; font-weight:800; color:{TXT_H}; line-height:1.1; }}
+  .kpi-sub {{ font-size:11px; color:{TXT_B}; margin-top:3px; }}
 
-    .main { background-color: #0f1117; }
+  /* Section titles */
+  .stitle {{
+    font-size:14px; font-weight:700; color:{TXT_H};
+    padding:8px 0; border-bottom:1px solid {BORDER};
+    margin-bottom:14px;
+  }}
 
-    /* Metric Cards */
-    .metric-card {
-        background: linear-gradient(135deg, #1a1d2e 0%, #1e2138 100%);
-        border-radius: 14px;
-        padding: 20px 24px;
-        border-left: 4px solid;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-        margin-bottom: 12px;
-    }
-    .metric-card.blue  { border-color: #3a7bd5; }
-    .metric-card.red   { border-color: #c0392b; }
-    .metric-card.green { border-color: #27ae60; }
-    .metric-card.amber { border-color: #d68910; }
+  /* Badges */
+  .bh {{ background:rgba(252,129,129,.15); color:{RED};   border:1px solid rgba(252,129,129,.4);
+         border-radius:7px; padding:4px 12px; font-size:12px; font-weight:700; }}
+  .bm {{ background:rgba(246,173, 85,.15); color:{AMBER}; border:1px solid rgba(246,173, 85,.4);
+         border-radius:7px; padding:4px 12px; font-size:12px; font-weight:700; }}
+  .bl2{{ background:rgba(104,211,145,.15); color:{GREEN}; border:1px solid rgba(104,211,145,.4);
+         border-radius:7px; padding:4px 12px; font-size:12px; font-weight:700; }}
 
-    .metric-label { font-size: 11px; color: #4a5160; font-weight: 500;
-                    text-transform: uppercase; letter-spacing: 0.6px; }
-    .metric-value { font-size: 30px; font-weight: 700; color: #5a6275;
-                    line-height: 1.2; margin: 4px 0; }
-    .metric-sub   { font-size: 11px; color: #3d4452; }
+  /* Sidebar */
+  [data-testid="stSidebar"] {{ background:#0a0c18; border-right:1px solid {BORDER}; }}
+  [data-testid="stSidebar"] label,
+  [data-testid="stSidebar"] .stSelectbox label,
+  [data-testid="stSidebar"] .stSlider label {{ color:{TXT_B} !important; font-size:12px; }}
+  [data-testid="stSidebar"] p,
+  [data-testid="stSidebar"] h2,
+  [data-testid="stSidebar"] h3 {{ color:{TXT_H} !important; }}
 
-    /* Section headers */
-    .section-title {
-        font-size: 15px; font-weight: 600; color: #5c6370;
-        padding: 10px 0 6px; border-bottom: 1px solid #21262d;
-        margin-bottom: 16px; letter-spacing: 0.3px;
-    }
+  /* Tabs */
+  .stTabs [data-baseweb="tab-list"] {{
+    background:{BG_CARD}; border-radius:12px; padding:4px; border:1px solid {BORDER};
+  }}
+  .stTabs [data-baseweb="tab"] {{
+    color:{TXT_B}; border-radius:8px; font-weight:500; font-size:13px; padding:8px 16px;
+  }}
+  .stTabs [aria-selected="true"] {{
+    background:linear-gradient(135deg,#1e2a5e,#2a1e5e) !important;
+    color:{TXT_H} !important;
+  }}
 
-    /* Risk Badges */
-    .badge-high   { background:#1f0d0d; color:#a94442; border:1px solid #7b2020;
-                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
-    .badge-medium { background:#1f1700; color:#a07800; border:1px solid #6b5000;
-                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
-    .badge-low    { background:#0a1f0a; color:#2e7d32; border:1px solid #1b4d1b;
-                    border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
+  /* Alert boxes */
+  .ainfo  {{ background:rgba( 99,179,237,.09); border:1px solid rgba( 99,179,237,.35);
+             border-radius:10px; padding:12px 16px; color:{BLUE};  font-size:13px; margin:8px 0; }}
+  .awarn  {{ background:rgba(246,173, 85,.09); border:1px solid rgba(246,173, 85,.35);
+             border-radius:10px; padding:12px 16px; color:{AMBER}; font-size:13px; margin:8px 0; }}
+  .adanger{{ background:rgba(252,129,129,.09); border:1px solid rgba(252,129,129,.35);
+             border-radius:10px; padding:12px 16px; color:{RED};   font-size:13px; margin:8px 0; }}
+  .aok    {{ background:rgba(104,211,145,.09); border:1px solid rgba(104,211,145,.35);
+             border-radius:10px; padding:12px 16px; color:{GREEN}; font-size:13px; margin:8px 0; }}
 
-    /* Sidebar */
-    [data-testid="stSidebar"] { background: #13151f; border-right: 1px solid #21262d; }
-    [data-testid="stSidebar"] .stSelectbox label,
-    [data-testid="stSidebar"] .stMultiSelect label,
-    [data-testid="stSidebar"] .stSlider label { color: #5c6370 !important; font-size:12px; }
+  /* Profile rows */
+  .pr {{ display:flex; justify-content:space-between; align-items:center;
+         padding:8px 0; border-bottom:1px solid {BORDER}; }}
+  .pk {{ color:{TXT_B}; font-size:13px; }}
+  .pv {{ color:{TXT_H}; font-size:13px; font-weight:600; }}
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { background: #161b22; border-radius: 10px; padding: 4px; }
-    .stTabs [data-baseweb="tab"] { color: #4a5160; border-radius: 8px; font-weight:500; font-size:13px; }
-    .stTabs [aria-selected="true"] { background: #21262d !important; color: #5c6370 !important; }
-
-    /* Table */
-    .dataframe { font-size: 12px !important; }
-
-    /* Info / Warn / Danger boxes */
-    .info-box {
-        background: #0d1829; border: 1px solid #1d3557; border-radius: 8px;
-        padding: 12px 16px; color: #4a6a8a; font-size: 12px; margin: 8px 0;
-    }
-    .warn-box {
-        background: #1a1200; border: 1px solid #4d3800; border-radius: 8px;
-        padding: 12px 16px; color: #6b5500; font-size: 12px; margin: 8px 0;
-    }
-    .danger-box {
-        background: #1a0707; border: 1px solid #5c1a1a; border-radius: 8px;
-        padding: 12px 16px; color: #6e2e2e; font-size: 12px; margin: 8px 0;
-    }
-    div[data-testid="stHorizontalBlock"] { gap: 12px; }
+  /* Pipeline rows */
+  .piperow {{ display:flex; gap:14px; padding:9px 0;
+              border-bottom:1px solid {BORDER}; align-items:start; }}
+  .pipestep {{ color:{BLUE};  font-size:12px; font-weight:700; min-width:190px; }}
+  .pipedesc {{ color:{TXT_B}; font-size:12px; }}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════════════
-#  DATA LOADING & MODEL TRAINING (cached)
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
+#  DATA LOADING & MODEL TRAINING
+# ══════════════════════════════════════════════════════════════
 @st.cache_data
 def load_and_process():
     df = pd.read_csv("Palo_Alto_Networks__1_.csv")
-
     proc = df.copy()
     le = LabelEncoder()
     for col in ['OverTime', 'Gender']:
         proc[col] = le.fit_transform(proc[col])
+    proc = pd.get_dummies(proc,
+        columns=['BusinessTravel','Department','EducationField','JobRole','MaritalStatus'],
+        drop_first=True)
 
-    ohe_cols = ['BusinessTravel', 'Department', 'EducationField', 'JobRole', 'MaritalStatus']
-    proc = pd.get_dummies(proc, columns=ohe_cols, drop_first=True)
-
-    # Feature engineering
     proc['IncomePerYear']   = proc['MonthlyIncome'] / (proc['TotalWorkingYears'] + 1)
     proc['PromotionDelay']  = proc['YearsAtCompany'] - proc['YearsSinceLastPromotion']
     proc['EngagementScore'] = (proc['JobSatisfaction'] + proc['EnvironmentSatisfaction'] +
                                 proc['RelationshipSatisfaction'] + proc['JobInvolvement'] +
                                 proc['WorkLifeBalance']) / 5
-    proc['WorkloadStress']  = ((proc['OverTime'] == 1) & (proc['WorkLifeBalance'] <= 2)).astype(int)
+    proc['WorkloadStress']  = ((proc['OverTime']==1) & (proc['WorkLifeBalance']<=2)).astype(int)
     proc['RoleStagnation']  = proc['YearsInCurrentRole'] - proc['YearsSinceLastPromotion']
     proc['LoyaltyIndex']    = proc['YearsAtCompany'] / (proc['NumCompaniesWorked'] + 1)
 
     X = proc.drop('Attrition', axis=1)
     y = proc['Attrition']
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y)
+    sc = StandardScaler()
+    Xs_tr = sc.fit_transform(X_tr)
+    Xs_te = sc.transform(X_te)
+    Xs_tr, y_tr = SMOTE(random_state=42).fit_resample(Xs_tr, y_tr)
 
-    scaler = StandardScaler()
-    X_train_s = scaler.fit_transform(X_train)
-    X_test_s  = scaler.transform(X_test)
+    mdl = XGBClassifier(n_estimators=300, max_depth=6, learning_rate=0.05,
+                        subsample=0.8, colsample_bytree=0.8,
+                        scale_pos_weight=(y_tr==0).sum()/(y_tr==1).sum(),
+                        use_label_encoder=False, eval_metric='logloss', random_state=42)
+    mdl.fit(Xs_tr, y_tr)
 
-    smote = SMOTE(random_state=42)
-    X_sm, y_sm = smote.fit_resample(X_train_s, y_train)
-
-    scale_pos = (y_train == 0).sum() / (y_train == 1).sum()
-    model = XGBClassifier(n_estimators=300, max_depth=6, learning_rate=0.05,
-                          subsample=0.8, colsample_bytree=0.8,
-                          scale_pos_weight=scale_pos, use_label_encoder=False,
-                          eval_metric='logloss', random_state=42)
-    model.fit(X_sm, y_sm)
-
-    X_all_s = scaler.transform(X)
-    probs   = model.predict_proba(X_all_s)[:, 1]
-
+    probs   = mdl.predict_proba(sc.transform(X))[:, 1]
     risk_df = df.copy()
     risk_df['AttritionProb'] = (probs * 100).round(1)
     risk_df['RiskCategory']  = risk_df['AttritionProb'].apply(
-        lambda p: 'High' if p >= 60 else ('Medium' if p >= 30 else 'Low'))
+        lambda p: 'High' if p>=60 else ('Medium' if p>=30 else 'Low'))
 
-    # Model metrics on test set
-    y_pred = model.predict(X_test_s)
-    y_prob = model.predict_proba(X_test_s)[:, 1]
+    yp = mdl.predict(Xs_te)
+    yprob = mdl.predict_proba(Xs_te)[:, 1]
     metrics = {
-        'Accuracy' : round(accuracy_score(y_test, y_pred), 4),
-        'Precision': round(precision_score(y_test, y_pred), 4),
-        'Recall'   : round(recall_score(y_test, y_pred), 4),
-        'F1'       : round(f1_score(y_test, y_pred), 4),
-        'ROC_AUC'  : round(roc_auc_score(y_test, y_prob), 4),
+        'Accuracy' : round(accuracy_score(y_te, yp),  4),
+        'Precision': round(precision_score(y_te, yp), 4),
+        'Recall'   : round(recall_score(y_te, yp),    4),
+        'F1'       : round(f1_score(y_te, yp),        4),
+        'ROC_AUC'  : round(roc_auc_score(y_te, yprob),4),
     }
-    cm = confusion_matrix(y_test, y_pred)
+    fi = pd.DataFrame({'Feature':X.columns,'Importance':mdl.feature_importances_})\
+           .sort_values('Importance', ascending=False).head(15)
 
-    # Feature importances
-    feat_imp = pd.DataFrame({
-        'Feature': X.columns,
-        'Importance': model.feature_importances_
-    }).sort_values('Importance', ascending=False).head(15)
+    return df, risk_df, mdl, sc, X, metrics, confusion_matrix(y_te, yp), fi
 
-    return df, risk_df, model, scaler, X, metrics, cm, feat_imp
 
-# ─── Load ────────────────────────────────────────────────────────────────────
-with st.spinner("🔄 Training XGBoost model on Palo Alto Networks data..."):
+def cstyle(ax, title='', xlabel='', ylabel='', legend=False):
+    """Apply consistent dark-theme chart styling."""
+    ax.set_facecolor(BG_CARD)
+    ax.figure.set_facecolor(BG_CARD)
+    if title:   ax.set_title(title,   color=TXT_H,  fontsize=12, fontweight='bold', pad=10)
+    if xlabel:  ax.set_xlabel(xlabel, color=TXT_B,  fontsize=10)
+    if ylabel:  ax.set_ylabel(ylabel, color=TXT_B,  fontsize=10)
+    ax.tick_params(colors=TXT_B, labelsize=9)
+    ax.spines[['top','right','left','bottom']].set_color(BORDER)
+    if legend:
+        ax.legend(facecolor=BG_CARD2, labelcolor=TXT_B, fontsize=9,
+                  edgecolor=BORDER, framealpha=0.95)
+
+
+# ── Load ──────────────────────────────────────────────────────
+with st.spinner("🔄 Training XGBoost model on Palo Alto Networks data…"):
     df_raw, risk_df, model, scaler, X_features, metrics, cm, feat_imp = load_and_process()
 
-# ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════
+#  SIDEBAR
+# ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## 🔵 Attrition Risk System")
-    st.markdown("**Palo Alto Networks**")
-    st.markdown("---")
+    st.markdown(f"<h2 style='color:{TXT_H};margin:0'>🔵 AttritionIQ</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{TXT_B};font-size:12px;margin:2px 0 0'>Palo Alto Networks · HR Analytics</p>",
+                unsafe_allow_html=True)
+    st.markdown(f"<hr style='border-color:{BORDER};margin:12px 0'>", unsafe_allow_html=True)
 
-    st.markdown("### 🎛️ Filters")
-    dept_options = ['All'] + sorted(df_raw['Department'].unique().tolist())
-    sel_dept = st.selectbox("Department", dept_options)
+    st.markdown(f"<p style='color:{TXT_H};font-weight:600;font-size:13px;margin-bottom:6px'>🎛️ Filters</p>",
+                unsafe_allow_html=True)
+    sel_dept = st.selectbox("Department", ['All'] + sorted(df_raw['Department'].unique().tolist()))
+    sel_role = st.selectbox("Job Role",   ['All'] + sorted(df_raw['JobRole'].unique().tolist()))
 
-    role_options = ['All'] + sorted(df_raw['JobRole'].unique().tolist())
-    sel_role = st.selectbox("Job Role", role_options)
+    st.markdown(f"<hr style='border-color:{BORDER};margin:12px 0'>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{TXT_H};font-weight:600;font-size:13px;margin-bottom:6px'>⚠️ Risk Threshold</p>",
+                unsafe_allow_html=True)
+    risk_threshold = st.slider("High Risk Cutoff (%)", 40, 80, 60, 5)
 
-    st.markdown("### ⚠️ Risk Threshold")
-    risk_threshold = st.slider("High Risk Cutoff (%)", 40, 80, 60, step=5,
-        help="Employees above this probability are flagged as High Risk")
-
-    st.markdown("### 👤 Employee Lookup")
+    st.markdown(f"<hr style='border-color:{BORDER};margin:12px 0'>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{TXT_H};font-weight:600;font-size:13px;margin-bottom:6px'>👤 Employee Lookup</p>",
+                unsafe_allow_html=True)
     emp_id = st.number_input("Employee Index (0–1469)", 0, 1469, 0, step=1)
 
-    st.markdown("---")
-    st.markdown("<div style='color:#2d3340;font-size:11px'>Unified Mentor Internship<br/>ML Attrition Project</div>",
+    st.markdown(f"<hr style='border-color:{BORDER};margin:16px 0'>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:{TXT_D};font-size:11px'>Unified Mentor Internship<br/>ML Attrition Project · XGBoost</p>",
                 unsafe_allow_html=True)
 
-# ─── Apply Filters ───────────────────────────────────────────────────────────
+
+# ── Filter data ───────────────────────────────────────────────
 filtered = risk_df.copy()
 filtered['RiskCategory'] = filtered['AttritionProb'].apply(
-    lambda p: 'High' if p >= risk_threshold else ('Medium' if p >= 30 else 'Low'))
+    lambda p: 'High' if p>=risk_threshold else ('Medium' if p>=30 else 'Low'))
+if sel_dept != 'All': filtered = filtered[filtered['Department']==sel_dept]
+if sel_role != 'All': filtered = filtered[filtered['JobRole']   ==sel_role]
 
-if sel_dept != 'All':
-    filtered = filtered[filtered['Department'] == sel_dept]
-if sel_role != 'All':
-    filtered = filtered[filtered['JobRole'] == sel_role]
 
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
 #  HEADER
-# ═══════════════════════════════════════════════════════════════
-st.markdown("""
-<div style='padding:20px 0 10px'>
-  <h1 style='color:#5a6275;font-size:24px;font-weight:700;margin:0'>
+# ══════════════════════════════════════════════════════════════
+st.markdown(f"""
+<div style='padding:16px 0 8px;border-bottom:1px solid {BORDER};margin-bottom:20px'>
+  <h1 style='color:{TXT_H};font-size:26px;font-weight:800;margin:0;letter-spacing:-.5px'>
     🔵 Employee Attrition Risk Dashboard
   </h1>
-  <p style='color:#3d4452;font-size:13px;margin:4px 0 0'>
-    Palo Alto Networks · Predictive HR Analytics · Powered by XGBoost + SHAP
+  <p style='color:{TXT_B};font-size:13px;margin:5px 0 0'>
+    Palo Alto Networks &nbsp;·&nbsp; Predictive HR Analytics &nbsp;·&nbsp;
+    Powered by XGBoost + SHAP
   </p>
-</div>
-""", unsafe_allow_html=True)
+</div>""", unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════
-#  TOP KPI CARDS
-# ═══════════════════════════════════════════════════════════════
-total   = len(filtered)
-high_n  = (filtered['RiskCategory'] == 'High').sum()
-med_n   = (filtered['RiskCategory'] == 'Medium').sum()
-low_n   = (filtered['RiskCategory'] == 'Low').sum()
-avg_p   = filtered['AttritionProb'].mean()
 
-c1, c2, c3, c4, c5 = st.columns(5)
+# ══════════════════════════════════════════════════════════════
+#  KPI ROW
+# ══════════════════════════════════════════════════════════════
+total  = len(filtered)
+high_n = (filtered['RiskCategory']=='High').sum()
+med_n  = (filtered['RiskCategory']=='Medium').sum()
+low_n  = (filtered['RiskCategory']=='Low').sum()
+avg_p  = filtered['AttritionProb'].mean()
 
-with c1:
-    st.markdown(f"""<div class='metric-card blue'>
-        <div class='metric-label'>Total Employees</div>
-        <div class='metric-value'>{total:,}</div>
-        <div class='metric-sub'>in current filter</div>
-    </div>""", unsafe_allow_html=True)
-
-with c2:
-    st.markdown(f"""<div class='metric-card red'>
-        <div class='metric-label'>🔴 High Risk</div>
-        <div class='metric-value'>{high_n}</div>
-        <div class='metric-sub'>{high_n/total*100:.1f}% of workforce</div>
-    </div>""", unsafe_allow_html=True)
-
-with c3:
-    st.markdown(f"""<div class='metric-card amber'>
-        <div class='metric-label'>🟡 Medium Risk</div>
-        <div class='metric-value'>{med_n}</div>
-        <div class='metric-sub'>{med_n/total*100:.1f}% of workforce</div>
-    </div>""", unsafe_allow_html=True)
-
-with c4:
-    st.markdown(f"""<div class='metric-card green'>
-        <div class='metric-label'>🟢 Low Risk</div>
-        <div class='metric-value'>{low_n}</div>
-        <div class='metric-sub'>{low_n/total*100:.1f}% of workforce</div>
-    </div>""", unsafe_allow_html=True)
-
-with c5:
-    st.markdown(f"""<div class='metric-card blue'>
-        <div class='metric-label'>Avg Risk Score</div>
-        <div class='metric-value'>{avg_p:.1f}%</div>
-        <div class='metric-sub'>Model AUC: {metrics['ROC_AUC']}</div>
-    </div>""", unsafe_allow_html=True)
+for col_w, cls, lbl, val, sub in zip(
+    st.columns(5),
+    ['bl','rd','am','gr','bl'],
+    ['👥 Total Employees','🔴 High Risk','🟡 Medium Risk','🟢 Low Risk','📊 Avg Risk Score'],
+    [f'{total:,}', str(high_n), str(med_n), str(low_n), f'{avg_p:.1f}%'],
+    ['in current filter',
+     f'{high_n/total*100:.1f}% of workforce',
+     f'{med_n/total*100:.1f}% of workforce',
+     f'{low_n/total*100:.1f}% of workforce',
+     f'Model AUC: {metrics["ROC_AUC"]}']
+):
+    with col_w:
+        st.markdown(f"""
+        <div class='kpi {cls}'>
+          <div class='kpi-lbl'>{lbl}</div>
+          <div class='kpi-val'>{val}</div>
+          <div class='kpi-sub'>{sub}</div>
+        </div>""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════
 #  TABS
-# ═══════════════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Risk Overview",
-    "👤 Employee Profile",
-    "🏢 Department View",
-    "🔍 Explainability",
-    "🤖 Model Performance"
+# ══════════════════════════════════════════════════════════════
+tab1,tab2,tab3,tab4,tab5 = st.tabs([
+    "📊 Risk Overview","👤 Employee Profile",
+    "🏢 Department View","🔍 Explainability","🤖 Model Performance"
 ])
 
-# ──────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
 # TAB 1 — RISK OVERVIEW
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 with tab1:
-    st.markdown("<div class='section-title'>📊 Workforce Attrition Risk Overview</div>",
+    st.markdown("<div class='stitle'>📊 Workforce Attrition Risk Overview</div>",
                 unsafe_allow_html=True)
 
-    col_a, col_b = st.columns([1, 1])
+    ca, cb = st.columns(2)
 
-    with col_a:
-        # Donut Chart — Risk Distribution
-        fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        sizes  = [high_n, med_n, low_n]
-        labels = [f'High\n{high_n}', f'Medium\n{med_n}', f'Low\n{low_n}']
-        colors = ['#8b2020', '#7a5c00', '#1b5e20']
-        wedges, texts, autotexts = ax.pie(
-            sizes, labels=labels, colors=colors,
-            autopct='%1.1f%%', startangle=90,
-            wedgeprops=dict(width=0.55, edgecolor='#1e2130', linewidth=2),
-            textprops={'color': '#4a5160', 'fontsize': 9}
+    with ca:   # Donut
+        fig, ax = plt.subplots(figsize=(5,4), facecolor=BG_CARD)
+        ax.set_facecolor(BG_CARD)
+        wedges, texts, autos = ax.pie(
+            [high_n, med_n, low_n],
+            labels=[f'High  {high_n}', f'Medium  {med_n}', f'Low  {low_n}'],
+            colors=[RED, AMBER, GREEN], autopct='%1.1f%%', startangle=90,
+            wedgeprops=dict(width=0.58, edgecolor=BG_CARD, linewidth=2.5),
+            textprops={'color': TXT_B, 'fontsize': 10, 'fontweight': '600'}
         )
-        for at in autotexts:
-            at.set_color('#3d4452'); at.set_fontsize(8); at.set_fontweight('bold')
-        ax.set_title('Risk Category Distribution', color='#5c6370',
-                     fontsize=11, fontweight='bold', pad=10)
-        st.pyplot(fig)
-        plt.close()
+        for a in autos:
+            a.set_color(BG_PAGE); a.set_fontsize(9); a.set_fontweight('bold')
+        ax.set_title('Risk Category Distribution', color=TXT_H, fontsize=12,
+                     fontweight='bold', pad=12)
+        st.pyplot(fig); plt.close()
 
-    with col_b:
-        # Histogram — Probability Distribution
-        fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        ax.hist(filtered['AttritionProb'], bins=25, color='#2d5a8e',
-                edgecolor='#1e2130', linewidth=0.8, alpha=0.75)
-        ax.axvline(x=risk_threshold, color='#8b2020', linestyle='--',
-                   linewidth=2, label=f'High Risk ≥{risk_threshold}%')
-        ax.axvline(x=30, color='#7a5c00', linestyle='--',
-                   linewidth=1.5, label='Medium Risk ≥30%')
-        ax.set_title('Attrition Probability Distribution',
-                     color='#5c6370', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Attrition Probability (%)', color='#3d4452')
-        ax.set_ylabel('Number of Employees', color='#3d4452')
-        ax.tick_params(colors='#3d4452')
-        ax.spines[['top','right','left','bottom']].set_color('#21262d')
-        ax.legend(fontsize=9, facecolor='#161b22', labelcolor='#4a5160')
-        st.pyplot(fig)
-        plt.close()
+    with cb:   # Histogram
+        fig, ax = plt.subplots(figsize=(5,4), facecolor=BG_CARD)
+        ax.hist(filtered['AttritionProb'], bins=25, color=BLUE,
+                edgecolor=BG_CARD, linewidth=0.8, alpha=0.85)
+        ax.axvline(x=risk_threshold, color=RED,   linestyle='--', linewidth=2,
+                   label=f'High Risk ≥{risk_threshold}%')
+        ax.axvline(x=30,             color=AMBER, linestyle='--', linewidth=1.8,
+                   label='Medium ≥30%')
+        cstyle(ax, 'Attrition Probability Distribution',
+               'Attrition Probability (%)', 'Employees', legend=True)
+        st.pyplot(fig); plt.close()
 
-    # High-Risk Employee Table
-    st.markdown("<div class='section-title'>🔴 High-Risk Employees (Immediate Action Required)</div>",
+    # High-Risk Table
+    st.markdown("<div class='stitle'>🔴 High-Risk Employees — Immediate Action Required</div>",
                 unsafe_allow_html=True)
-
-    high_risk_table = filtered[filtered['RiskCategory'] == 'High'][[
-        'Department', 'JobRole', 'Age', 'MonthlyIncome', 'OverTime',
-        'JobSatisfaction', 'YearsAtCompany', 'YearsSinceLastPromotion',
-        'AttritionProb'
+    hrt = filtered[filtered['RiskCategory']=='High'][[
+        'Department','JobRole','Age','MonthlyIncome','OverTime',
+        'JobSatisfaction','YearsAtCompany','YearsSinceLastPromotion','AttritionProb'
     ]].sort_values('AttritionProb', ascending=False).head(20)
 
-    if len(high_risk_table) == 0:
-        st.markdown("<div class='info-box'>✅ No high-risk employees in current filter.</div>",
+    if len(hrt)==0:
+        st.markdown("<div class='aok'>✅ No high-risk employees in current filter.</div>",
                     unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='danger-box'>⚠️ <b>{len(high_risk_table)}</b> employees flagged as HIGH RISK. "
-                    f"Immediate retention intervention recommended.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='adanger'>⚠️ <b>{len(hrt)}</b> employees flagged HIGH RISK — "
+                    f"immediate retention intervention recommended.</div>", unsafe_allow_html=True)
+        def cr(v):
+            if v >= risk_threshold: return f'color:{RED};font-weight:700'
+            elif v >= 30:           return f'color:{AMBER};font-weight:600'
+            return f'color:{GREEN}'
+        st.dataframe(hrt.style.applymap(cr, subset=['AttritionProb']),
+                     use_container_width=True, height=340)
 
-        def color_risk(val):
-            if val >= risk_threshold: return 'color: #EF5350; font-weight:bold'
-            elif val >= 30: return 'color: #FFA726'
-            return 'color: #66BB6A'
-
-        styled = high_risk_table.style.applymap(color_risk, subset=['AttritionProb'])
-        st.dataframe(styled, use_container_width=True, height=350)
-
-    # Attrition by key categories
-    st.markdown("<div class='section-title'>📈 Attrition Rate by Key Factors</div>",
+    # Mini bar charts
+    st.markdown("<div class='stitle'>📈 Attrition Rate by Key Factors</div>",
                 unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-    fig_cols = [
-        (col1, 'OverTime',       'Attrition Rate by Overtime'),
-        (col2, 'MaritalStatus',  'Attrition Rate by Marital Status'),
-        (col3, 'BusinessTravel', 'Attrition Rate by Travel'),
-    ]
-    for col_widget, feat, title in fig_cols:
-        with col_widget:
-            fig, ax = plt.subplots(figsize=(4, 3), facecolor='#1e2130')
-            ax.set_facecolor('#1e2130')
-            rates = df_raw.groupby(feat)['Attrition'].mean() * 100
+    for col_w, feat, title in zip(
+        st.columns(3),
+        ['OverTime','MaritalStatus','BusinessTravel'],
+        ['By Overtime Status','By Marital Status','By Business Travel']
+    ):
+        with col_w:
+            fig, ax = plt.subplots(figsize=(4,3), facecolor=BG_CARD)
+            rates = df_raw.groupby(feat)['Attrition'].mean()*100
             rates.sort_values(ascending=False).plot(
-                kind='bar', ax=ax, color='#6b2020', edgecolor='#1e2130', width=0.6)
-            ax.set_title(title, color='#5c6370', fontsize=10, fontweight='bold')
-            ax.set_ylabel('%', color='#3d4452', fontsize=9)
-            ax.tick_params(colors='#3d4452', labelsize=8, rotation=20)
-            ax.spines[['top','right','left','bottom']].set_color('#21262d')
+                kind='bar', ax=ax,
+                color=[RED,AMBER,GREEN,BLUE,PURPLE][:len(rates)],
+                edgecolor=BG_CARD, width=0.65)
             ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+            ax.tick_params(axis='x', rotation=20)
+            cstyle(ax, title, ylabel='Rate (%)')
             for bar in ax.patches:
-                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3,
+                ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.4,
                         f'{bar.get_height():.1f}%', ha='center', va='bottom',
-                        fontsize=7, color='#3d4452')
-            st.pyplot(fig)
-            plt.close()
+                        fontsize=8, color=TXT_B, fontweight='600')
+            st.pyplot(fig); plt.close()
 
-# ──────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
 # TAB 2 — EMPLOYEE PROFILE
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 with tab2:
-    st.markdown("<div class='section-title'>👤 Individual Employee Risk Profile</div>",
+    st.markdown("<div class='stitle'>👤 Individual Employee Risk Profile</div>",
                 unsafe_allow_html=True)
 
-    emp = risk_df.iloc[emp_id]
-    prob = emp['AttritionProb']
+    emp      = risk_df.iloc[emp_id]
+    prob     = emp['AttritionProb']
     risk_cat = emp['RiskCategory']
 
-    # Risk color
-    if risk_cat == 'High':
-        badge_class = 'badge-high'; risk_icon = '🔴'; bar_color = '#8b2020'
-        action = "🚨 URGENT: Schedule immediate 1:1. Consider salary review, role change, or counter-offer."
-        box_class = 'danger-box'
-    elif risk_cat == 'Medium':
-        badge_class = 'badge-medium'; risk_icon = '🟡'; bar_color = '#7a5c00'
-        action = "⚠️ Monitor closely. Schedule career development discussion. Review compensation."
-        box_class = 'warn-box'
+    if risk_cat=='High':
+        badge_cls,risk_icon,bar_color = 'bh','🔴',RED
+        action  = "🚨 URGENT: Schedule immediate 1:1. Consider salary review, role change, or counter-offer."
+        box_cls = 'adanger'
+    elif risk_cat=='Medium':
+        badge_cls,risk_icon,bar_color = 'bm','🟡',AMBER
+        action  = "⚠️ Monitor closely. Schedule career development discussion. Review compensation."
+        box_cls = 'awarn'
     else:
-        badge_class = 'badge-low'; risk_icon = '🟢'; bar_color = '#2e7d32'
-        action = "✅ Employee is stable. Continue regular check-ins and engagement activities."
-        box_class = 'info-box'
+        badge_cls,risk_icon,bar_color = 'bl2','🟢',GREEN
+        action  = "✅ Employee is stable. Continue regular check-ins and engagement activities."
+        box_cls = 'aok'
 
-    col_left, col_right = st.columns([1, 1])
+    cl, cr2 = st.columns([1,1])
 
-    with col_left:
+    with cl:
         st.markdown(f"""
-        <div class='metric-card blue' style='margin-bottom:16px'>
+        <div class='kpi bl' style='margin-bottom:16px'>
           <div style='display:flex;justify-content:space-between;align-items:start'>
             <div>
-              <div class='metric-label'>Employee ID #{emp_id}</div>
-              <div class='metric-value'>{emp['JobRole']}</div>
-              <div class='metric-sub'>{emp['Department']} · Age {emp['Age']}</div>
+              <div class='kpi-lbl'>Employee ID #{emp_id}</div>
+              <div style='font-size:20px;font-weight:800;color:{TXT_H};margin:4px 0 2px'>
+                {emp['JobRole']}</div>
+              <div style='color:{TXT_B};font-size:13px'>{emp['Department']} · Age {emp['Age']}</div>
             </div>
-            <span class='{badge_class}'>{risk_icon} {risk_cat} Risk</span>
+            <span class='{badge_cls}'>{risk_icon} {risk_cat} Risk</span>
           </div>
-        </div>
-        """, unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
 
-        # Profile details
-        details = {
-            "💰 Monthly Income": f"${emp['MonthlyIncome']:,}",
-            "⏰ Overtime": emp['OverTime'],
-            "😊 Job Satisfaction": f"{emp['JobSatisfaction']} / 4",
+        for k, v in {
+            "💰 Monthly Income":           f"${emp['MonthlyIncome']:,}",
+            "⏰ Overtime":                 emp['OverTime'],
+            "😊 Job Satisfaction":         f"{emp['JobSatisfaction']} / 4",
             "🌍 Environment Satisfaction": f"{emp['EnvironmentSatisfaction']} / 4",
-            "⚖️ Work-Life Balance": f"{emp['WorkLifeBalance']} / 4",
-            "🤝 Relationship Satisfaction": f"{emp['RelationshipSatisfaction']} / 4",
-            "🏢 Years at Company": emp['YearsAtCompany'],
-            "📅 Years in Current Role": emp['YearsInCurrentRole'],
-            "🎯 Years Since Promotion": emp['YearsSinceLastPromotion'],
-            "✈️ Business Travel": emp['BusinessTravel'],
-            "💍 Marital Status": emp['MaritalStatus'],
-            "🎓 Education Level": emp['Education'],
-        }
-        for k, v in details.items():
+            "⚖️ Work-Life Balance":        f"{emp['WorkLifeBalance']} / 4",
+            "🤝 Relationship Satisfaction":f"{emp['RelationshipSatisfaction']} / 4",
+            "🏢 Years at Company":         emp['YearsAtCompany'],
+            "📅 Years in Current Role":    emp['YearsInCurrentRole'],
+            "🎯 Years Since Promotion":    emp['YearsSinceLastPromotion'],
+            "✈️ Business Travel":          emp['BusinessTravel'],
+            "💍 Marital Status":           emp['MaritalStatus'],
+            "🎓 Education Level":          emp['Education'],
+        }.items():
             st.markdown(
-                f"<div style='display:flex;justify-content:space-between;"
-                f"padding:6px 0;border-bottom:1px solid #21262d;'>"
-                f"<span style='color:#3d4452;font-size:12px'>{k}</span>"
-                f"<span style='color:#5c6370;font-size:12px;font-weight:500'>{v}</span>"
-                f"</div>", unsafe_allow_html=True)
+                f"<div class='pr'><span class='pk'>{k}</span>"
+                f"<span class='pv'>{v}</span></div>",
+                unsafe_allow_html=True)
 
-    with col_right:
-        # Gauge Chart
-        fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-
+    with cr2:
+        # Gauge
+        fig, ax = plt.subplots(figsize=(5,4), facecolor=BG_CARD)
+        ax.set_facecolor(BG_CARD)
         theta = np.linspace(np.pi, 0, 300)
-        r_outer, r_inner = 1.0, 0.6
-
-        # Background arc zones
-        for start, end, col in [(0, 0.3, '#1a3a1a'), (0.3, 0.6, '#2d2500'), (0.6, 1.0, '#3a1010')]:
-            t_seg = np.linspace(np.pi, np.pi * (1 - end), 100)
-            t_seg2 = np.linspace(np.pi * (1 - start), np.pi, 100)
-            ax.fill_between(
-                np.concatenate([np.cos(np.linspace(np.pi*(1-end), np.pi*(1-start), 100)),
-                                np.cos(t_seg2)[::-1] * r_inner / r_outer]),
-                np.concatenate([np.sin(np.linspace(np.pi*(1-end), np.pi*(1-start), 100)),
-                                np.sin(t_seg2)[::-1] * r_inner / r_outer]),
-                alpha=0.5, color=col
-            )
-
-        # Full arc
-        ax.plot(np.cos(theta), np.sin(theta), color='#374151', linewidth=20, solid_capstyle='round')
-        ax.plot(np.cos(theta) * r_inner, np.sin(theta) * r_inner, color='#1e2130', linewidth=12)
-
-        # Filled arc up to prob
-        fill_end = np.pi - (prob / 100) * np.pi
-        theta_fill = np.linspace(np.pi, fill_end, 200)
-        ax.plot(np.cos(theta_fill), np.sin(theta_fill), color=bar_color,
-                linewidth=20, solid_capstyle='round', alpha=0.9)
-
+        # Track
+        ax.plot(np.cos(theta), np.sin(theta), color='#1e2248',
+                linewidth=22, solid_capstyle='round')
+        # Zone tints
+        for lo, hi, c in [(0,.30,f'{GREEN}40'),(0.30,.60,f'{AMBER}40'),(0.60,1.0,f'{RED}40')]:
+            t = np.linspace(np.pi, np.pi*(1-hi), 120)
+            ax.plot(np.cos(t), np.sin(t), color=c, linewidth=22, solid_capstyle='butt')
+        # Progress
+        ax.plot(np.cos(np.linspace(np.pi, np.pi-(prob/100)*np.pi, 200)),
+                np.sin(np.linspace(np.pi, np.pi-(prob/100)*np.pi, 200)),
+                color=bar_color, linewidth=22, solid_capstyle='round', alpha=0.95)
+        # Hollow
+        ax.plot(np.cos(theta)*0.62, np.sin(theta)*0.62,
+                color=BG_CARD, linewidth=14, solid_capstyle='round')
         # Needle
-        angle = np.pi - (prob / 100) * np.pi
-        ax.annotate('', xy=(0.72 * np.cos(angle), 0.72 * np.sin(angle)),
-                    xytext=(0, 0),
-                    arrowprops=dict(arrowstyle='->', color='white', lw=2.5))
-        ax.add_patch(plt.Circle((0, 0), 0.06, color='white', zorder=5))
+        ang = np.pi-(prob/100)*np.pi
+        ax.annotate('', xy=(.75*np.cos(ang),.75*np.sin(ang)), xytext=(0,0),
+                    arrowprops=dict(arrowstyle='->', color=TXT_H, lw=2.5))
+        ax.add_patch(plt.Circle((0,0),.07, color=TXT_H,  zorder=6))
+        ax.add_patch(plt.Circle((0,0),.04, color=BG_CARD, zorder=7))
+        ax.text(0,.18, f'{prob:.1f}%', ha='center', va='center',
+                fontsize=28, fontweight='800', color=bar_color)
+        ax.text(0,-.04, 'Attrition Risk', ha='center', va='center',
+                fontsize=11, color=TXT_B)
+        ax.text(-.92,-.08,'0%',   color=GREEN, fontsize=9, ha='center', fontweight='700')
+        ax.text(  0,1.08, '50%',  color=AMBER, fontsize=9, ha='center', fontweight='700')
+        ax.text( .92,-.08,'100%', color=RED,   fontsize=9, ha='center', fontweight='700')
+        ax.set_xlim(-1.2,1.2); ax.set_ylim(-.3,1.3); ax.axis('off')
+        ax.set_title('Risk Gauge', color=TXT_H, fontsize=12, fontweight='bold')
+        st.pyplot(fig); plt.close()
 
-        ax.text(0, 0.15, f'{prob:.1f}%', ha='center', va='center',
-                fontsize=26, fontweight='bold', color=bar_color)
-        ax.text(0, -0.05, 'Attrition Risk', ha='center', va='center',
-                fontsize=11, color='#3d4452')
-        ax.text(-0.95, -0.1, '0%', color='#2e7d32', fontsize=9, ha='center')
-        ax.text(0, 1.05, '50%', color='#7a5c00', fontsize=9, ha='center')
-        ax.text(0.95, -0.1, '100%', color='#8b2020', fontsize=9, ha='center')
+        # Radar
+        cats   = ['Job\nSatisf.','Environ.\nSatisf.','Work-Life\nBalance',
+                  'Relation.\nSatisf.','Job\nInvolv.']
+        vals   = [emp['JobSatisfaction'], emp['EnvironmentSatisfaction'],
+                  emp['WorkLifeBalance'],  emp['RelationshipSatisfaction'], emp['JobInvolvement']]
+        angles = np.linspace(0, 2*np.pi, len(cats), endpoint=False).tolist()
+        vr = vals+[vals[0]]; ag = angles+angles[:1]
+        fig, ax = plt.subplots(figsize=(4.5,3.5), subplot_kw=dict(polar=True), facecolor=BG_CARD)
+        ax.set_facecolor(BG_CARD)
+        ax.plot(ag, vr, color=bar_color, linewidth=2.5)
+        ax.fill(ag, vr, alpha=0.22, color=bar_color)
+        ax.set_xticks(angles)
+        ax.set_xticklabels(cats, color=TXT_B, fontsize=8)
+        ax.set_ylim(0,4); ax.set_yticks([1,2,3,4])
+        ax.set_yticklabels(['1','2','3','4'], color=TXT_D, fontsize=7)
+        ax.spines['polar'].set_color(BORDER)
+        ax.grid(color=BORDER, linewidth=0.8)
+        ax.set_title('Satisfaction Radar', color=TXT_H, fontsize=11,
+                     fontweight='bold', pad=14)
+        st.pyplot(fig); plt.close()
 
-        ax.set_xlim(-1.2, 1.2); ax.set_ylim(-0.3, 1.25)
-        ax.axis('off')
-        ax.set_title('Risk Gauge', color='#5c6370', fontsize=12, fontweight='bold')
-        st.pyplot(fig)
-        plt.close()
-
-        # Satisfaction Radar
-        cats = ['Job\nSatisfaction', 'Environment\nSatisfaction', 'Work-Life\nBalance',
-                'Relationship\nSatisfaction', 'Job\nInvolvement']
-        vals = [emp['JobSatisfaction'], emp['EnvironmentSatisfaction'],
-                emp['WorkLifeBalance'], emp['RelationshipSatisfaction'], emp['JobInvolvement']]
-        N = len(cats)
-        angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
-        vals_r  = vals + [vals[0]]
-        angles += angles[:1]
-
-        fig, ax = plt.subplots(figsize=(4.5, 3.5), subplot_kw=dict(polar=True), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        ax.plot(angles, vals_r, color=bar_color, linewidth=2)
-        ax.fill(angles, vals_r, alpha=0.25, color=bar_color)
-        ax.set_xticks(angles[:-1]); ax.set_xticklabels(cats, color='#3d4452', fontsize=8)
-        ax.set_ylim(0, 4); ax.set_yticks([1, 2, 3, 4])
-        ax.set_yticklabels(['1', '2', '3', '4'], color='#374151', fontsize=7)
-        ax.spines['polar'].set_color('#21262d')
-        ax.grid(color='#21262d', linewidth=0.8)
-        ax.set_title('Satisfaction Radar', color='#5c6370', fontsize=11,
-                     fontweight='bold', pad=15)
-        st.pyplot(fig)
-        plt.close()
-
-    # Recommended Action
-    st.markdown(f"<div class='{box_class}'><b>📌 Recommended HR Action:</b><br>{action}</div>",
+    st.markdown(f"<div class='{box_cls}'><b>📌 Recommended HR Action:</b><br>{action}</div>",
                 unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TAB 3 — DEPARTMENT VIEW
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 with tab3:
-    st.markdown("<div class='section-title'>🏢 Department-Level Attrition Risk</div>",
+    st.markdown("<div class='stitle'>🏢 Department-Level Attrition Risk</div>",
                 unsafe_allow_html=True)
 
-    col_a, col_b = st.columns(2)
+    dept_stats = risk_df.groupby('Department').agg(
+        Total   =('AttritionProb','count'),
+        AvgRisk =('AttritionProb','mean'),
+        HighRisk=('RiskCategory', lambda x:(x=='High').sum()),
+        MedRisk =('RiskCategory', lambda x:(x=='Medium').sum()),
+    ).round(1)
 
-    with col_a:
-        dept_stats = risk_df.groupby('Department').agg(
-            Total=('AttritionProb', 'count'),
-            AvgRisk=('AttritionProb', 'mean'),
-            HighRisk=('RiskCategory', lambda x: (x == 'High').sum()),
-            MedRisk=('RiskCategory', lambda x: (x == 'Medium').sum()),
-        ).round(1)
-
-        fig, ax = plt.subplots(figsize=(6, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        depts = dept_stats.index.tolist()
-        x = np.arange(len(depts))
-        w = 0.35
-        ax.bar(x - w/2, dept_stats['HighRisk'],   w, label='High Risk',   color='#6b2020', edgecolor='#1e2130')
-        ax.bar(x + w/2, dept_stats['MedRisk'],    w, label='Medium Risk', color='#5c4400', edgecolor='#1e2130')
-        ax.set_xticks(x); ax.set_xticklabels(depts, color='#3d4452', rotation=15, fontsize=10)
-        ax.tick_params(colors='#3d4452')
-        ax.spines[['top','right','left','bottom']].set_color('#21262d')
-        ax.set_title('High & Medium Risk Count by Department',
-                     color='#5c6370', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Employees', color='#3d4452')
-        ax.legend(facecolor='#161b22', labelcolor='#4a5160', fontsize=9)
+    ca, cb = st.columns(2)
+    with ca:
+        fig, ax = plt.subplots(figsize=(6,4), facecolor=BG_CARD)
+        x = np.arange(len(dept_stats)); w = 0.35
+        ax.bar(x-w/2, dept_stats['HighRisk'], w, label='High Risk',   color=RED,   edgecolor=BG_CARD, alpha=0.9)
+        ax.bar(x+w/2, dept_stats['MedRisk'],  w, label='Medium Risk', color=AMBER, edgecolor=BG_CARD, alpha=0.9)
+        ax.set_xticks(x); ax.set_xticklabels(dept_stats.index, rotation=15, fontsize=10)
+        cstyle(ax, 'Risk Count by Department', ylabel='Employees', legend=True)
         st.pyplot(fig); plt.close()
 
-    with col_b:
-        fig, ax = plt.subplots(figsize=(6, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        colors_bar = ['#6b2020', '#5c4400', '#1b5e20']
+    with cb:
+        fig, ax = plt.subplots(figsize=(6,4), facecolor=BG_CARD)
+        dc = [RED if v>=40 else AMBER if v>=25 else GREEN for v in dept_stats['AvgRisk']]
         bars = ax.barh(dept_stats.index, dept_stats['AvgRisk'],
-                       color=colors_bar[:len(dept_stats)], edgecolor='#1e2130')
+                       color=dc, edgecolor=BG_CARD, height=0.55, alpha=0.9)
         for bar in bars:
-            ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2,
-                    f'{bar.get_width():.1f}%', va='center', color='#3d4452', fontsize=10)
-        ax.set_xlabel('Average Attrition Probability (%)', color='#3d4452')
-        ax.tick_params(colors='#3d4452')
-        ax.spines[['top','right','left','bottom']].set_color('#21262d')
-        ax.set_title('Avg Risk Score by Department', color='#5c6370',
-                     fontsize=12, fontweight='bold')
+            ax.text(bar.get_width()+.4, bar.get_y()+bar.get_height()/2,
+                    f'{bar.get_width():.1f}%', va='center',
+                    color=TXT_H, fontsize=11, fontweight='700')
+        cstyle(ax, 'Avg Risk Score by Department', xlabel='Avg Probability (%)')
         st.pyplot(fig); plt.close()
 
-    # Job Role Risk Breakdown
-    st.markdown("<div class='section-title'>💼 Risk Breakdown by Job Role</div>",
+    st.markdown("<div class='stitle'>💼 Risk Breakdown by Job Role</div>",
                 unsafe_allow_html=True)
-
     role_stats = risk_df.groupby('JobRole').agg(
-        Headcount=('AttritionProb', 'count'),
-        AvgRisk=('AttritionProb', 'mean'),
-        MaxRisk=('AttritionProb', 'max'),
-        HighRiskCount=('RiskCategory', lambda x: (x == 'High').sum())
+        Headcount    =('AttritionProb','count'),
+        AvgRisk      =('AttritionProb','mean'),
+        MaxRisk      =('AttritionProb','max'),
+        HighRiskCount=('RiskCategory', lambda x:(x=='High').sum())
     ).round(1).sort_values('AvgRisk', ascending=False)
 
-    fig, ax = plt.subplots(figsize=(10, 4), facecolor='#1e2130')
-    ax.set_facecolor('#1e2130')
-    bar_colors = ['#6b2020' if v >= 40 else '#5c4400' if v >= 25 else '#1b5e20'
-                  for v in role_stats['AvgRisk']]
+    fig, ax = plt.subplots(figsize=(10,4), facecolor=BG_CARD)
+    rc = [RED if v>=40 else AMBER if v>=25 else GREEN for v in role_stats['AvgRisk']]
     bars = ax.bar(role_stats.index, role_stats['AvgRisk'],
-                  color=bar_colors, edgecolor='#1e2130', width=0.6)
-    ax.set_xticklabels(role_stats.index, rotation=30, ha='right', color='#3d4452', fontsize=9)
-    ax.tick_params(colors='#3d4452')
-    ax.spines[['top','right','left','bottom']].set_color('#21262d')
-    ax.set_title('Average Attrition Risk by Job Role', color='#5c6370',
-                 fontsize=12, fontweight='bold')
-    ax.set_ylabel('Avg Attrition Probability (%)', color='#3d4452')
-    ax.axhline(y=risk_threshold, color='#6b2020', linestyle='--', alpha=0.5,
+                  color=rc, edgecolor=BG_CARD, width=0.65, alpha=0.9)
+    ax.axhline(y=risk_threshold, color=RED, linestyle='--', alpha=0.7, linewidth=1.8,
                label=f'High Risk Threshold ({risk_threshold}%)')
-    ax.legend(facecolor='#161b22', labelcolor='#4a5160', fontsize=9)
     for bar in bars:
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3,
+        ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+.4,
                 f'{bar.get_height():.1f}%', ha='center', va='bottom',
-                fontsize=8, color='#3d4452')
+                fontsize=8, color=TXT_H, fontweight='600')
+    ax.set_xticklabels(role_stats.index, rotation=30, ha='right')
+    cstyle(ax, 'Average Attrition Risk by Job Role', ylabel='Avg Probability (%)', legend=True)
     plt.tight_layout()
     st.pyplot(fig); plt.close()
-
     st.dataframe(role_stats, use_container_width=True)
 
 
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TAB 4 — EXPLAINABILITY
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 with tab4:
-    st.markdown("<div class='section-title'>🔍 Feature Importance — What Drives Attrition?</div>",
+    st.markdown("<div class='stitle'>🔍 Feature Importance — What Drives Attrition?</div>",
                 unsafe_allow_html=True)
 
-    col_a, col_b = st.columns([1.2, 1])
-
-    with col_a:
-        fig, ax = plt.subplots(figsize=(7, 6), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
+    ca, cb = st.columns([1.3,1])
+    with ca:
+        fig, ax = plt.subplots(figsize=(7,6), facecolor=BG_CARD)
         top15 = feat_imp.head(15)
-        norm_colors = plt.cm.RdYlGn_r(
-            np.linspace(0.05, 0.9, len(top15)))
-        bars = ax.barh(top15['Feature'][::-1], top15['Importance'][::-1],
-                       color=norm_colors[::-1], edgecolor='#1e2130')
-        for bar in bars:
-            ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height()/2,
-                    f'{bar.get_width():.4f}', va='center', color='#3d4452', fontsize=8)
-        ax.set_title('Top 15 Feature Importances (XGBoost)',
-                     color='#5c6370', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Importance Score', color='#3d4452')
-        ax.tick_params(colors='#3d4452', labelsize=9)
-        ax.spines[['top','right','left','bottom']].set_color('#21262d')
-        plt.tight_layout()
-        st.pyplot(fig); plt.close()
-
-    with col_b:
-        st.markdown("<div class='section-title'>💡 Key Insights</div>",
-                    unsafe_allow_html=True)
-        insights = [
-            ("🔴 Overtime", "Employees working overtime are 3× more likely to leave."),
-            ("💰 Monthly Income", "Lower income is among the strongest attrition predictors."),
-            ("📅 Years at Company", "Early-tenure employees (0–3 yrs) show highest risk."),
-            ("😊 Job Satisfaction", "Low satisfaction (score 1) doubles attrition rate."),
-            ("⚡ Engagement Score", "Composite disengagement is a top engineered signal."),
-            ("📈 Stock Options", "Employees with no stock options leave more frequently."),
-            ("🏠 Distance from Home", "Longer commutes correlate with higher attrition."),
-            ("🔄 Role Stagnation", "No progression in role significantly raises risk."),
+        # Red→Blue gradient: top feature = RED, bottom = BLUE
+        n = len(top15)
+        grad = [
+            '#{:02x}{:02x}{:02x}'.format(
+                int(252-(252- 99)*i/(n-1)),
+                int(129+(179-129)*i/(n-1)),
+                int(129+(237-129)*i/(n-1))
+            ) for i in range(n)
         ]
-        for icon_title, desc in insights:
+        bars = ax.barh(top15['Feature'][::-1], top15['Importance'][::-1],
+                       color=grad[::-1], edgecolor=BG_CARD, height=0.7)
+        for bar in bars:
+            ax.text(bar.get_width()+.001, bar.get_y()+bar.get_height()/2,
+                    f'{bar.get_width():.4f}', va='center',
+                    color=TXT_H, fontsize=9, fontweight='600')
+        cstyle(ax, 'Top 15 Feature Importances (XGBoost)', xlabel='Importance Score')
+        plt.tight_layout(); st.pyplot(fig); plt.close()
+
+    with cb:
+        st.markdown("<div class='stitle'>💡 Key Attrition Insights</div>",
+                    unsafe_allow_html=True)
+        for title, desc, accent in [
+            ("🔴 Overtime",           "Employees working overtime are 3× more likely to leave.", RED),
+            ("💰 Monthly Income",     "Lower income is among the strongest attrition predictors.", AMBER),
+            ("📅 Years at Company",   "Early-tenure employees (0–3 yrs) show highest risk.", BLUE),
+            ("😊 Job Satisfaction",   "Low satisfaction (score 1) doubles attrition rate.", GREEN),
+            ("⚡ Engagement Score",   "Composite disengagement is a top engineered signal.", PURPLE),
+            ("📈 Stock Options",      "Employees with no stock options leave more frequently.", TEAL),
+            ("🏠 Distance from Home", "Longer commutes correlate with higher attrition.", AMBER),
+            ("🔄 Role Stagnation",    "No progression in role significantly raises risk.", RED),
+        ]:
             st.markdown(f"""
-            <div style='padding:8px 12px;margin:4px 0;background:#13151f;
-                        border-radius:7px;border-left:2px solid #21262d'>
-              <div style='color:#4a5160;font-size:12px;font-weight:600'>{icon_title}</div>
-              <div style='color:#2d3340;font-size:11px;margin-top:2px'>{desc}</div>
+            <div style='padding:9px 14px;margin:5px 0;background:{BG_CARD2};
+                        border-radius:10px;border-left:3px solid {accent}'>
+              <div style='color:{TXT_H};font-size:13px;font-weight:600'>{title}</div>
+              <div style='color:{TXT_B};font-size:12px;margin-top:3px'>{desc}</div>
             </div>""", unsafe_allow_html=True)
 
-    # What-If Scenario Explorer
-    st.markdown("<div class='section-title'>🎛️ What-If Scenario Explorer</div>",
+    # What-If
+    st.markdown("<div class='stitle'>🎛️ What-If Scenario Explorer</div>",
                 unsafe_allow_html=True)
-    st.markdown("<div class='info-box'>Adjust the sliders below to simulate how changing conditions "
-                "affect an employee's attrition risk (based on a representative employee profile).</div>",
-                unsafe_allow_html=True)
+    st.markdown(f"<div class='ainfo'>Adjust the sliders to simulate how changing conditions "
+                f"affect an employee's attrition risk.</div>", unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    c1, c2, c3 = st.columns(3)
+    with c1:
         wi_income   = st.slider("Monthly Income ($)", 1000, 20000, 5000, 500)
-        wi_overtime = st.selectbox("Overtime", ["No", "Yes"])
-    with col2:
-        wi_jobsat   = st.slider("Job Satisfaction (1-4)", 1, 4, 2)
-        wi_wlb      = st.slider("Work-Life Balance (1-4)", 1, 4, 2)
-    with col3:
-        wi_yrs_promo = st.slider("Years Since Promotion", 0, 15, 3)
-        wi_dist      = st.slider("Distance From Home (km)", 1, 30, 10)
+        wi_overtime = st.selectbox("Overtime", ["No","Yes"])
+    with c2:
+        wi_jobsat = st.slider("Job Satisfaction (1–4)", 1, 4, 2)
+        wi_wlb    = st.slider("Work-Life Balance (1–4)", 1, 4, 2)
+    with c3:
+        wi_promo = st.slider("Years Since Promotion", 0, 15, 3)
+        wi_dist  = st.slider("Distance From Home (km)", 1, 30, 10)
 
-    # Build a sample employee vector using the median of each feature
-    median_vals = X_features.median()
-    sample = median_vals.copy()
-    sample['MonthlyIncome']          = wi_income
-    sample['OverTime']               = 1 if wi_overtime == "Yes" else 0
-    sample['JobSatisfaction']        = wi_jobsat
-    sample['WorkLifeBalance']        = wi_wlb
-    sample['YearsSinceLastPromotion']= wi_yrs_promo
-    sample['DistanceFromHome']       = wi_dist
-    # Recalc engineered features
-    sample['EngagementScore'] = (wi_jobsat + sample['EnvironmentSatisfaction'] +
-                                  sample['RelationshipSatisfaction'] +
-                                  sample['JobInvolvement'] + wi_wlb) / 5
-    sample['WorkloadStress']  = 1 if (wi_overtime == "Yes" and wi_wlb <= 2) else 0
-    sample['IncomePerYear']   = wi_income / (sample['TotalWorkingYears'] + 1)
+    samp = X_features.median().copy()
+    samp['MonthlyIncome']          = wi_income
+    samp['OverTime']               = 1 if wi_overtime=="Yes" else 0
+    samp['JobSatisfaction']        = wi_jobsat
+    samp['WorkLifeBalance']        = wi_wlb
+    samp['YearsSinceLastPromotion']= wi_promo
+    samp['DistanceFromHome']       = wi_dist
+    samp['EngagementScore'] = (wi_jobsat + samp['EnvironmentSatisfaction'] +
+                                samp['RelationshipSatisfaction'] +
+                                samp['JobInvolvement'] + wi_wlb) / 5
+    samp['WorkloadStress']  = 1 if (wi_overtime=="Yes" and wi_wlb<=2) else 0
+    samp['IncomePerYear']   = wi_income / (samp['TotalWorkingYears'] + 1)
 
-    sample_scaled = scaler.transform(sample.values.reshape(1, -1))
-    wi_prob = model.predict_proba(sample_scaled)[0][1] * 100
-
-    wi_color = '#8b2020' if wi_prob >= risk_threshold else '#7a5c00' if wi_prob >= 30 else '#2e7d32'
-    wi_label = 'HIGH RISK 🔴' if wi_prob >= risk_threshold else 'MEDIUM RISK 🟡' if wi_prob >= 30 else 'LOW RISK 🟢'
+    wi_prob  = model.predict_proba(scaler.transform(samp.values.reshape(1,-1)))[0][1]*100
+    wi_color = RED if wi_prob>=risk_threshold else AMBER if wi_prob>=30 else GREEN
+    wi_label = 'HIGH RISK 🔴' if wi_prob>=risk_threshold else \
+               'MEDIUM RISK 🟡' if wi_prob>=30 else 'LOW RISK 🟢'
 
     st.markdown(f"""
-    <div class='metric-card blue' style='text-align:center;margin-top:10px'>
-      <div class='metric-label'>Predicted Attrition Probability</div>
-      <div style='font-size:42px;font-weight:800;color:{wi_color}'>{wi_prob:.1f}%</div>
-      <div style='font-size:14px;color:{wi_color};font-weight:600;opacity:0.8'>{wi_label}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    <div class='kpi bl' style='text-align:center;margin-top:12px;padding:28px'>
+      <div class='kpi-lbl'>Predicted Attrition Probability</div>
+      <div style='font-size:56px;font-weight:900;color:{wi_color};line-height:1.1'>{wi_prob:.1f}%</div>
+      <div style='font-size:16px;color:{wi_color};font-weight:700;margin-top:6px'>{wi_label}</div>
+    </div>""", unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TAB 5 — MODEL PERFORMANCE
-# ──────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 with tab5:
-    st.markdown("<div class='section-title'>🤖 XGBoost Model Performance Report</div>",
+    st.markdown("<div class='stitle'>🤖 XGBoost Model Performance Report</div>",
                 unsafe_allow_html=True)
 
-    # Metrics row
-    m1, m2, m3, m4, m5 = st.columns(5)
-    metric_items = [
-        (m1, "Accuracy",  metrics['Accuracy'],  "Overall correctness", "blue"),
-        (m2, "Precision", metrics['Precision'], "False-positive control", "green"),
-        (m3, "Recall",    metrics['Recall'],    "Attrition detection ★", "amber"),
-        (m4, "F1-Score",  metrics['F1'],        "Precision/Recall balance", "blue"),
-        (m5, "ROC-AUC",   metrics['ROC_AUC'],   "Overall classification power", "green"),
-    ]
-    for col_w, name, val, desc, clr in metric_items:
+    for col_w, name, val, desc, cls in zip(
+        st.columns(5),
+        ['Accuracy','Precision','Recall','F1-Score','ROC-AUC'],
+        [metrics['Accuracy'],metrics['Precision'],metrics['Recall'],
+         metrics['F1'],metrics['ROC_AUC']],
+        ['Overall correctness','False-positive control',
+         'Attrition detection ★','Precision/Recall balance',
+         'Classification power'],
+        ['bl','gr','rd','am','gr']
+    ):
         with col_w:
-            st.markdown(f"""<div class='metric-card {clr}'>
-                <div class='metric-label'>{name}</div>
-                <div class='metric-value'>{val:.3f}</div>
-                <div class='metric-sub'>{desc}</div>
+            st.markdown(f"""
+            <div class='kpi {cls}'>
+              <div class='kpi-lbl'>{name}</div>
+              <div class='kpi-val'>{val:.3f}</div>
+              <div class='kpi-sub'>{desc}</div>
             </div>""", unsafe_allow_html=True)
 
-    col_a, col_b = st.columns(2)
-
-    with col_a:
-        # Confusion Matrix
-        fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
+    ca, cb = st.columns(2)
+    with ca:
+        fig, ax = plt.subplots(figsize=(5,4), facecolor=BG_CARD)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
-                    xticklabels=['Stayed', 'Left'],
-                    yticklabels=['Stayed', 'Left'],
-                    linewidths=2, linecolor='#1e2130',
-                    annot_kws={'size': 14, 'color': '#5c6370', 'weight': 'bold'})
-        ax.set_title('Confusion Matrix', color='#5c6370', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Actual', color='#3d4452')
-        ax.set_xlabel('Predicted', color='#3d4452')
-        ax.tick_params(colors='#3d4452')
-        plt.tight_layout()
-        st.pyplot(fig); plt.close()
+                    xticklabels=['Stayed','Left'], yticklabels=['Stayed','Left'],
+                    linewidths=2, linecolor=BG_CARD,
+                    annot_kws={'size':16,'color':TXT_H,'weight':'bold'})
+        cstyle(ax, 'Confusion Matrix','Predicted','Actual')
+        plt.tight_layout(); st.pyplot(fig); plt.close()
 
-    with col_b:
-        # Metric bar chart
-        fig, ax = plt.subplots(figsize=(5, 4), facecolor='#1e2130')
-        ax.set_facecolor('#1e2130')
-        metric_names = list(metrics.keys())
-        metric_vals  = list(metrics.values())
-        colors_m = ['#2d5a8e', '#1b5e20', '#6b2020', '#5c4400', '#4a235a']
-        bars = ax.bar(metric_names, metric_vals, color=colors_m, edgecolor='#1e2130', width=0.6)
+    with cb:
+        fig, ax = plt.subplots(figsize=(5,4), facecolor=BG_CARD)
+        bars = ax.bar(list(metrics.keys()), list(metrics.values()),
+                      color=[BLUE,GREEN,RED,AMBER,PURPLE],
+                      edgecolor=BG_CARD, width=0.6, alpha=0.92)
         for bar in bars:
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005,
+            ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+.007,
                     f'{bar.get_height():.3f}', ha='center', va='bottom',
-                    fontsize=10, color='#3d4452', fontweight='bold')
-        ax.set_ylim(0, 1.1)
-        ax.axhline(y=0.8, color='#21262d', linestyle='--', alpha=0.6, linewidth=1)
-        ax.set_title('Model Metrics Overview', color='#5c6370', fontsize=12, fontweight='bold')
-        ax.tick_params(colors='#3d4452')
-        ax.spines[['top','right','left','bottom']].set_color('#21262d')
-        plt.tight_layout()
-        st.pyplot(fig); plt.close()
+                    fontsize=10, color=TXT_H, fontweight='700')
+        ax.set_ylim(0,1.12)
+        ax.axhline(y=0.8, color=TXT_D, linestyle='--', alpha=0.5, linewidth=1.2)
+        cstyle(ax, 'Model Metrics Overview')
+        plt.tight_layout(); st.pyplot(fig); plt.close()
 
-    # Pipeline Summary
-    st.markdown("<div class='section-title'>⚙️ ML Pipeline Summary</div>",
+    st.markdown("<div class='stitle'>⚙️ ML Pipeline Summary</div>",
                 unsafe_allow_html=True)
-    pipeline_steps = [
-        ("1. Data Loading", "1,470 employees × 31 features from Palo Alto Networks HR data"),
-        ("2. Preprocessing", "Label Encoding (OverTime, Gender) + One-Hot Encoding (5 categorical columns)"),
+    for step, desc in [
+        ("1. Data Loading",        "1,470 employees × 31 features from Palo Alto Networks HR data"),
+        ("2. Preprocessing",       "Label Encoding (OverTime, Gender) + One-Hot Encoding (5 categorical columns)"),
         ("3. Feature Engineering", "6 new features: IncomePerYear, EngagementScore, WorkloadStress, PromotionDelay, RoleStagnation, LoyaltyIndex"),
-        ("4. Train/Test Split", "80/20 stratified split → 1,176 train / 294 test"),
-        ("5. Class Balancing", "SMOTE applied to training set to fix 84%/16% imbalance"),
-        ("6. Model", "XGBoost (300 trees, depth=6, lr=0.05) trained on SMOTE-balanced data"),
-        ("7. Risk Scoring", "Each employee scored 0–100% → Low / Medium / High risk categories"),
-    ]
-    for step, desc in pipeline_steps:
+        ("4. Train/Test Split",    "80/20 stratified split → 1,176 train / 294 test"),
+        ("5. Class Balancing",     "SMOTE applied to training set to fix 84%/16% imbalance"),
+        ("6. Model",               "XGBoost (300 trees, depth=6, lr=0.05) trained on SMOTE-balanced data"),
+        ("7. Risk Scoring",        "Each employee scored 0–100% → Low / Medium / High risk categories"),
+    ]:
         st.markdown(f"""
-        <div style='display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #21262d;align-items:start'>
-          <span style='color:#264d7a;font-size:12px;font-weight:600;min-width:180px'>{step}</span>
-          <span style='color:#3d4452;font-size:12px'>{desc}</span>
+        <div class='piperow'>
+          <span class='pipestep'>{step}</span>
+          <span class='pipedesc'>{desc}</span>
         </div>""", unsafe_allow_html=True)
