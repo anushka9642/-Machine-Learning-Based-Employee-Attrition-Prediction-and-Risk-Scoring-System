@@ -359,9 +359,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 <div align="center">
 
-**Built with ❤️ for the Unified Mentor Internship Program**
-
-*Palo Alto Networks · HR Predictive Analytics · 2025*
 
 ⭐ **Star this repo** if you found it useful!
 
