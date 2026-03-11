@@ -1,5 +1,6 @@
 
 # 🔵 Machine Learning–Based Employee Attrition Prediction & Risk Scoring System
+Live Project Link - https://employee-attrition-prediction-and-risk-scoring-system.streamlit.app/
 
 > **Predict which employees are most likely to leave — before they resign.**  
 > An end-to-end ML system that transforms HR analytics from reactive to proactive.
