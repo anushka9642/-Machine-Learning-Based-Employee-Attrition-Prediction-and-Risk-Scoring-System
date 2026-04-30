@@ -351,8 +351,8 @@ with tab1:
             if v >= risk_threshold: return f'color:{RED};font-weight:700'
             elif v >= 30:           return f'color:{AMBER};font-weight:600'
             return f'color:{GREEN}'
-        st.dataframe(hrt.style.applymap(cr, subset=['AttritionProb']),
-                     use_container_width=True, height=340)
+        st.dataframe(hrt.style.map(cr, subset=['AttritionProb']),
+             use_container_width=True, height=340)
 
     # Mini bar charts
     st.markdown("<div class='stitle'>📈 Attrition Rate by Key Factors</div>",
